@@ -15,7 +15,7 @@ RSA doesn't encrypt a long file in one piece (there's a limit on the size of a s
 
 | **Technologies** |
 |---|
-| `с++`, `G++`, `make`, `OpenSSL (libcrypto) rsa` & `xor (own implementation) encryptions`, `PEM-keys` |
+| `с++`, `G++`, `make`, `OpenSSL (libcrypto) rsa` & `xor (own implementation)`, `PEM-keys` |
 
 ## Authors
 
