@@ -10,7 +10,7 @@ Symmetry: (a ⊕ k) ⊕ k = a, so the same operation with the same key both "enc
 #### RSA
 The idea: a pair of keys—a public and a private one. Data encrypted with the public key can only be decrypted with the private key (and vice versa in other scenarios, but in your program: encryption with the public key, reading with the private key).
 Mathematics (simplified): the message and keys are numbers modulo a large prime product; encryption is raising to the e power, decryption is raising to the d power, chosen so that the operations are mutually inverse.
-In your program, this is done by OpenSSL, with OAEP + SHA-256 padding to ensure short messages cannot be guessed and the block length is secure.
+In our program, this is done by OpenSSL, with OAEP + SHA-256 padding to ensure short messages cannot be guessed and the block length is secure.
 RSA doesn't encrypt a long file in one piece (there's a limit on the size of a single block), so the file is cut into blocks, each block encrypted separately. The length of the original data is written at the beginning of the file to indicate where to stop during decryption.
 
 | **Technologies** |
