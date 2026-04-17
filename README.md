@@ -1,6 +1,6 @@
 ---
 <p align="center">
-  <img src="epaw.png" alt="Project banner" style="max-width:100%;">
+  <img src="epaw.jpg" alt="Project banner" style="max-width:100%;">
 </p>
 
 ! image AI generated !
