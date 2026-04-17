@@ -26,5 +26,5 @@ RSA doesn't encrypt a long file in one piece (there's a limit on the size of a s
 | **Work on the project** | `main program` | `presentation` & <br> `documentation` | `main program` |
 
 
-from Nulllev (aka B.D.S.M.) with <3
+from B.D.S.M. with <3
 
