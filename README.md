@@ -1,3 +1,11 @@
+---
+<p align="center">
+  <img src="epaw.png" alt="Project banner" style="max-width:100%;">
+</p>
+
+! image AI generated !
+
+---
 # encryption_paw !WIP!
 - encryption_paw - College Project on c++ 
 
