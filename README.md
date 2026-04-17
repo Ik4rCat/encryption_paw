@@ -7,7 +7,7 @@
 
 ---
 # encryption_paw !WIP!
-- encryption_paw - College Project on c++ 
+- encryption_paw - College encryption project on c++ 
 
 ### How it works
 #### XOR
