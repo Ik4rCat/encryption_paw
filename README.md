@@ -25,14 +25,14 @@ RSA doesn't encrypt a long file in one piece (there's a limit on the size of a s
 
 | **Technologies** |
 |---|
-| `с++`, `G++`, `make`, `OpenSSL (libcrypto) rsa` & `xor (own implementation)`, `PEM-keys` |
+| `qt`, `с++`, `G++`, `make`, `OpenSSL (libcrypto) rsa` & `xor (own implementation)`, `PEM-keys` |
 
 ## Authors
 
 | Project performance assessment | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ |
 |---|---|---|---|
 | **Digital face** | <img src="https://avatars.githubusercontent.com/Ik4rCat" width="100" height="100" style="border-radius: 100%"> | <img src="https://avatars.githubusercontent.com/gkfosl" width="100" height="100" style="border-radius: 100%">  | <img src="https://avatars.githubusercontent.com/artitiam" width="100" height="100" style="border-radius: 100%"> |
-| **Names** | [@awsk](https://github.com/Ik4rCat) | [@gkfosl](https://github.com/gkfosl) | [@artitiam](https://github.com/artitiam) |
+| **Names** | [@æwk](https://github.com/Ik4rCat) | [@gkfosl](https://github.com/gkfosl) | [@artitiam](https://github.com/artitiam) |
 | **Work on the project** | `main program` | `presentation` & <br> `documentation` | `main program` |
 
 
