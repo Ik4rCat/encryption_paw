@@ -21,23 +21,14 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-static bool isTextPrintable(const std::vector<uint8_t>& data) {
-    for (uint8_t b : data) {
-        if (b < 0x20 && b != '\n' && b != '\r' && b != '\t') {
-            return false;
-        }
-    }
-    return true;
-}
-
 static QString bytesToDisplay(const std::vector<uint8_t>& data) {
-    if (isTextPrintable(data)) {
-        return QString::fromUtf8(reinterpret_cast<const char*>(data.data()),
-                                 static_cast<int>(data.size()));
+    QByteArray bytes(reinterpret_cast<const char*>(data.data()),
+                     static_cast<int>(data.size()));
+    QString asUtf8 = QString::fromUtf8(bytes);
+    if (asUtf8.toUtf8() == bytes) {
+        return asUtf8;
     }
-    return QString::fromLatin1(
-        QByteArray(reinterpret_cast<const char*>(data.data()),
-                   static_cast<int>(data.size())).toBase64());
+    return QString::fromLatin1(bytes.toBase64());
 }
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
