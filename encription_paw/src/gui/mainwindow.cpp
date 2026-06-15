@@ -10,6 +10,8 @@
 #include "io/file_source.h"
 
 #include <QApplication>
+#include <QByteArray>
+#include <QCheckBox>
 #include <QClipboard>
 #include <QFile>
 #include <QFileDialog>
@@ -19,24 +21,23 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-static QString bytesToDisplay(const std::vector<uint8_t>& data) {
-    bool isPrintable = true;
+static bool isTextPrintable(const std::vector<uint8_t>& data) {
     for (uint8_t b : data) {
         if (b < 0x20 && b != '\n' && b != '\r' && b != '\t') {
-            isPrintable = false;
-            break;
+            return false;
         }
     }
-    if (isPrintable) {
+    return true;
+}
+
+static QString bytesToDisplay(const std::vector<uint8_t>& data) {
+    if (isTextPrintable(data)) {
         return QString::fromUtf8(reinterpret_cast<const char*>(data.data()),
                                  static_cast<int>(data.size()));
     }
-    QString hex;
-    hex.reserve(static_cast<int>(data.size()) * 3);
-    for (uint8_t b : data) {
-        hex += QString::asprintf("%02X ", b);
-    }
-    return hex.trimmed();
+    return QString::fromLatin1(
+        QByteArray(reinterpret_cast<const char*>(data.data()),
+                   static_cast<int>(data.size())).toBase64());
 }
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -70,10 +71,16 @@ void MainWindow::setupUi() {
 
         m_srcStack = new QStackedWidget(srcGroup);
 
-        m_srcTextEdit = new QPlainTextEdit(m_srcStack);
+        QWidget* textPage = new QWidget(m_srcStack);
+        QVBoxLayout* textPageLayout = new QVBoxLayout(textPage);
+        textPageLayout->setContentsMargins(0, 0, 0, 0);
+        m_srcTextEdit = new QPlainTextEdit(textPage);
         m_srcTextEdit->setPlaceholderText("Введите текст...");
-        m_srcTextEdit->setFixedHeight(80);
-        m_srcStack->addWidget(m_srcTextEdit);
+        m_srcTextEdit->setFixedHeight(72);
+        m_srcBase64 = new QCheckBox("Ввод в Base64 (для вставки зашифрованного результата)", textPage);
+        textPageLayout->addWidget(m_srcTextEdit);
+        textPageLayout->addWidget(m_srcBase64);
+        m_srcStack->addWidget(textPage);
 
         QWidget* filePage = new QWidget(m_srcStack);
         QHBoxLayout* fileRow = new QHBoxLayout(filePage);
@@ -184,7 +191,7 @@ void MainWindow::setupUi() {
 
         QHBoxLayout* radioRow = new QHBoxLayout();
         m_outGui = new QRadioButton("В интерфейсе", outGroup);
-        m_outFile = new QRadioButton("В файл (.bin)", outGroup);
+        m_outFile = new QRadioButton("В файл (.bin / .txt)", outGroup);
         m_outGui->setChecked(true);
         radioRow->addWidget(m_outGui);
         radioRow->addWidget(m_outFile);
@@ -210,7 +217,7 @@ void MainWindow::setupUi() {
         QVBoxLayout* fileOutLayout = new QVBoxLayout(fileOutPage);
         fileOutLayout->setContentsMargins(0, 0, 0, 0);
         fileOutLayout->addWidget(
-            new QLabel("Файл (.bin) для сохранения будет выбран при нажатии «Выполнить»"));
+            new QLabel("Файл (.bin или .txt) для сохранения будет выбран при нажатии «Выполнить»"));
         m_outStack->addWidget(fileOutPage);
 
         gl->addWidget(m_outStack);
@@ -346,8 +353,20 @@ void MainWindow::execute() {
         std::vector<uint8_t> inputData;
 
         if (m_srcText->isChecked()) {
-            std::string text = m_srcTextEdit->toPlainText().toStdString();
-            inputData.assign(text.begin(), text.end());
+            if (m_srcBase64->isChecked()) {
+                QByteArray decoded = QByteArray::fromBase64(
+                    m_srcTextEdit->toPlainText().trimmed().toLatin1());
+                if (decoded.isEmpty() && !m_srcTextEdit->toPlainText().trimmed().isEmpty()) {
+                    QMessageBox::warning(this, "Ошибка", "Не удалось декодировать Base64.");
+                    return;
+                }
+                inputData.assign(
+                    reinterpret_cast<const uint8_t*>(decoded.constData()),
+                    reinterpret_cast<const uint8_t*>(decoded.constData()) + decoded.size());
+            } else {
+                std::string text = m_srcTextEdit->toPlainText().toStdString();
+                inputData.assign(text.begin(), text.end());
+            }
         } else if (m_srcFile->isChecked()) {
             QString path = m_srcFilePath->text().trimmed();
             if (path.isEmpty()) {
@@ -402,13 +421,23 @@ void MainWindow::execute() {
         if (m_outGui->isChecked()) {
             m_outTextEdit->setPlainText(bytesToDisplay(result));
         } else {
+            QString selectedFilter;
             QString path = QFileDialog::getSaveFileName(
-                this, "Сохранить результат", "", "Binary (*.bin);;All (*)");
+                this, "Сохранить результат", "",
+                "Binary (*.bin);;Text (*.txt);;All (*)",
+                &selectedFilter);
             if (path.isEmpty()) {
                 return;
             }
-            if (!path.endsWith(".bin", Qt::CaseInsensitive)) {
-                path += ".bin";
+            bool hasDot = path.contains('.');
+            if (!hasDot) {
+                if (selectedFilter.contains(".bin")) {
+                    path += ".bin";
+                } else if (selectedFilter.contains(".txt")) {
+                    path += ".txt";
+                } else {
+                    path += ".bin";
+                }
             }
             FileSink sink(path.toStdString());
             sink.write(result);

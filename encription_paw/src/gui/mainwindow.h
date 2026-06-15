@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 
+#include <QCheckBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
@@ -40,6 +41,7 @@ private:
     QRadioButton* m_srcPrev{};
     QStackedWidget* m_srcStack{};
     QPlainTextEdit* m_srcTextEdit{};
+    QCheckBox* m_srcBase64{};
     QLineEdit* m_srcFilePath{};
     QLabel* m_srcPrevLabel{};
 
