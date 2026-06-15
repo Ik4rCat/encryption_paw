@@ -1,41 +1,98 @@
-# Prerequisites
-*.d
+# Build directories
+build*/
+encription_paw/build*/
 
-# Compiled Object files
-*.slo
-*.lo
+# Private keys — never commit
+private.pem
+**/private.pem
+
+# Compiled object files
 *.o
 *.obj
+*.slo
+*.lo
 
-# Precompiled Headers
+# Precompiled headers
 *.gch
 *.pch
 
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
+# Static and dynamic libraries
+*.a
+*.la
+*.lai
+*.lib
 *.so
+*.so.*
 *.dylib
 *.dll
 
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# Linker / debugger files
+*.ilk
+*.pdb
+*.dwo
 
 # Executables
 *.exe
 *.out
 *.app
 
-# debug information files
-*.dwo
+# Qt generated files
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*.moc
+*.qm
+*.prl
+
+# Qt Creator / IDE files
+*.pro.user*
+*.qbs.user*
+CMakeLists.txt.user*
+/.qtcreator/
+**/.qmlls.ini
+*.autosave
+*.flc
+
+# Fortran module files
+*.mod
+*.smod
+
+# Editor temporaries
+*~
+*.orig
+*.rej
+.#*
+*.*#
+.*.swp
+.DS_Store
+.directory
+Thumbs.db
+
+# Visual Studio
+*.idb
+*.sln
+*.suo
+*.vcproj
+*vcproj.*.*.user
+*.ncb
+*.sdf
+*.opensdf
+*.vcxproj
+*vcxproj.*
+
+# MinGW
+*.Debug
+*.Release
+
+# Python
+*.pyc
+
+# Debug / misc
+*.debug
+*.d
+*.res
+*.rc
+*.core
+core
+!core/
+tags
