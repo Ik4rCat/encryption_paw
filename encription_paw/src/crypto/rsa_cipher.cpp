@@ -104,10 +104,24 @@ std::vector<uint8_t> rsaDecrypt(const std::vector<uint8_t>& data, const std::str
 
     if (data.size() < 8) {
         EVP_PKEY_free(pkey);
-        throw std::runtime_error("Input too short (missing header)");
+        throw std::runtime_error("Данные слишком короткие — это не RSA-шифротекст");
     }
 
     const uint64_t plain_len = readU64Be(data.data());
+    const size_t cipher_bytes = data.size() - 8;
+
+    if (cipher_bytes % static_cast<size_t>(rsa_size) != 0) {
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Данные не являются RSA-шифротекстом (неверный размер блоков)");
+    }
+
+    const size_t num_blocks = cipher_bytes / static_cast<size_t>(rsa_size);
+    const int max_plain = rsaMaxPlaintext(pkey);
+    if (max_plain <= 0 || plain_len > num_blocks * static_cast<size_t>(max_plain)) {
+        EVP_PKEY_free(pkey);
+        throw std::runtime_error("Данные повреждены: длина оригинала не соответствует блокам");
+    }
+
     std::vector<uint8_t> result;
     result.reserve(static_cast<size_t>(plain_len));
 

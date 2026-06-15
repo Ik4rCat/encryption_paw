@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 
+#include "crypto/key_generator.h"
 #include "crypto/key_validator.h"
 #include "crypto/rsa_cipher.h"
 #include "crypto/xor_cipher.h"
@@ -10,6 +11,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QFile>
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -41,7 +43,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setupUi();
     connectSignals();
     setWindowTitle("EncryptionPaw");
-    resize(700, 680);
+    resize(700, 720);
 }
 
 void MainWindow::setupUi() {
@@ -58,9 +60,11 @@ void MainWindow::setupUi() {
         QHBoxLayout* radioRow = new QHBoxLayout();
         m_srcText = new QRadioButton("Текст", srcGroup);
         m_srcFile = new QRadioButton("Файл", srcGroup);
+        m_srcPrev = new QRadioButton("Предыдущий результат", srcGroup);
         m_srcText->setChecked(true);
         radioRow->addWidget(m_srcText);
         radioRow->addWidget(m_srcFile);
+        radioRow->addWidget(m_srcPrev);
         radioRow->addStretch();
         gl->addLayout(radioRow);
 
@@ -80,8 +84,15 @@ void MainWindow::setupUi() {
         fileRow->addWidget(m_srcFilePath);
         fileRow->addWidget(srcBrowse);
         m_srcStack->addWidget(filePage);
-
         connect(srcBrowse, &QPushButton::clicked, this, &MainWindow::browseInputFile);
+
+        QWidget* prevPage = new QWidget(m_srcStack);
+        QVBoxLayout* prevLayout = new QVBoxLayout(prevPage);
+        prevLayout->setContentsMargins(0, 4, 0, 4);
+        m_srcPrevLabel = new QLabel("Нет предыдущего результата", prevPage);
+        m_srcPrevLabel->setStyleSheet("color: gray;");
+        prevLayout->addWidget(m_srcPrevLabel);
+        m_srcStack->addWidget(prevPage);
 
         gl->addWidget(m_srcStack);
         mainLayout->addWidget(srcGroup);
@@ -90,17 +101,27 @@ void MainWindow::setupUi() {
     {
         QGroupBox* algGroup = new QGroupBox("Алгоритм", central);
         QVBoxLayout* gl = new QVBoxLayout(algGroup);
-
         m_algTabs = new QTabWidget(algGroup);
 
         QWidget* xorTab = new QWidget(m_algTabs);
         QVBoxLayout* xorLayout = new QVBoxLayout(xorTab);
+
         QHBoxLayout* keyRow = new QHBoxLayout();
         keyRow->addWidget(new QLabel("Ключ:"));
         m_xorKey = new QLineEdit(xorTab);
         m_xorKey->setPlaceholderText("Введите ключ XOR...");
         keyRow->addWidget(m_xorKey);
+        keyRow->addWidget(new QLabel("Длина:"));
+        m_xorKeyLen = new QSpinBox(xorTab);
+        m_xorKeyLen->setRange(1, 256);
+        m_xorKeyLen->setValue(32);
+        m_xorKeyLen->setFixedWidth(60);
+        keyRow->addWidget(m_xorKeyLen);
+        QPushButton* xorGenBtn = new QPushButton("Сгенерировать", xorTab);
+        keyRow->addWidget(xorGenBtn);
         xorLayout->addLayout(keyRow);
+        connect(xorGenBtn, &QPushButton::clicked, this, &MainWindow::generateXorKey);
+
         QHBoxLayout* xorOpRow = new QHBoxLayout();
         m_xorEncrypt = new QRadioButton("Шифровать", xorTab);
         m_xorDecrypt = new QRadioButton("Расшифровать", xorTab);
@@ -113,6 +134,7 @@ void MainWindow::setupUi() {
 
         QWidget* rsaTab = new QWidget(m_algTabs);
         QVBoxLayout* rsaLayout = new QVBoxLayout(rsaTab);
+
         QHBoxLayout* rsaOpRow = new QHBoxLayout();
         m_rsaEncrypt = new QRadioButton("Шифровать", rsaTab);
         m_rsaDecrypt = new QRadioButton("Расшифровать", rsaTab);
@@ -142,6 +164,10 @@ void MainWindow::setupUi() {
         rsaLayout->addLayout(privRow);
         connect(privBrowse, &QPushButton::clicked, this, &MainWindow::browsePrivKey);
 
+        QPushButton* rsaGenBtn = new QPushButton("Сгенерировать пару ключей (RSA-2048)", rsaTab);
+        rsaLayout->addWidget(rsaGenBtn);
+        connect(rsaGenBtn, &QPushButton::clicked, this, &MainWindow::generateRsaKeys);
+
         m_rsaKeyStatus = new QLabel("● Не проверен", rsaTab);
         m_rsaKeyStatus->setStyleSheet("color: gray;");
         rsaLayout->addWidget(m_rsaKeyStatus);
@@ -158,7 +184,7 @@ void MainWindow::setupUi() {
 
         QHBoxLayout* radioRow = new QHBoxLayout();
         m_outGui = new QRadioButton("В интерфейсе", outGroup);
-        m_outFile = new QRadioButton("В файл", outGroup);
+        m_outFile = new QRadioButton("В файл (.bin)", outGroup);
         m_outGui->setChecked(true);
         radioRow->addWidget(m_outGui);
         radioRow->addWidget(m_outFile);
@@ -183,7 +209,8 @@ void MainWindow::setupUi() {
         QWidget* fileOutPage = new QWidget(m_outStack);
         QVBoxLayout* fileOutLayout = new QVBoxLayout(fileOutPage);
         fileOutLayout->setContentsMargins(0, 0, 0, 0);
-        fileOutLayout->addWidget(new QLabel("Файл для сохранения будет выбран при нажатии «Выполнить»"));
+        fileOutLayout->addWidget(
+            new QLabel("Файл (.bin) для сохранения будет выбран при нажатии «Выполнить»"));
         m_outStack->addWidget(fileOutPage);
 
         gl->addWidget(m_outStack);
@@ -198,13 +225,30 @@ void MainWindow::setupUi() {
 
 void MainWindow::connectSignals() {
     connect(m_srcText, &QRadioButton::toggled, this, [this](bool checked) {
-        m_srcStack->setCurrentIndex(checked ? 0 : 1);
+        if (checked) { m_srcStack->setCurrentIndex(0); }
+    });
+    connect(m_srcFile, &QRadioButton::toggled, this, [this](bool checked) {
+        if (checked) { m_srcStack->setCurrentIndex(1); }
+    });
+    connect(m_srcPrev, &QRadioButton::toggled, this, [this](bool checked) {
+        if (checked) { m_srcStack->setCurrentIndex(2); }
     });
     connect(m_outGui, &QRadioButton::toggled, this, [this](bool checked) {
         m_outStack->setCurrentIndex(checked ? 0 : 1);
     });
     connect(m_rsaPrivKey, &QLineEdit::editingFinished, this, &MainWindow::validatePrivKey);
     connect(m_executeBtn, &QPushButton::clicked, this, &MainWindow::execute);
+}
+
+void MainWindow::updatePrevLabel() {
+    if (m_lastResult.empty()) {
+        m_srcPrevLabel->setText("Нет предыдущего результата");
+        m_srcPrevLabel->setStyleSheet("color: gray;");
+    } else {
+        m_srcPrevLabel->setText(
+            QString("Предыдущий результат: %1 байт").arg(m_lastResult.size()));
+        m_srcPrevLabel->setStyleSheet("color: green;");
+    }
 }
 
 void MainWindow::browseInputFile() {
@@ -215,14 +259,16 @@ void MainWindow::browseInputFile() {
 }
 
 void MainWindow::browsePubKey() {
-    QString path = QFileDialog::getOpenFileName(this, "Публичный ключ (PEM)", "", "PEM (*.pem);;All (*)");
+    QString path = QFileDialog::getOpenFileName(
+        this, "Публичный ключ (PEM)", "", "PEM (*.pem);;All (*)");
     if (!path.isEmpty()) {
         m_rsaPubKey->setText(path);
     }
 }
 
 void MainWindow::browsePrivKey() {
-    QString path = QFileDialog::getOpenFileName(this, "Приватный ключ (PEM)", "", "PEM (*.pem);;All (*)");
+    QString path = QFileDialog::getOpenFileName(
+        this, "Приватный ключ (PEM)", "", "PEM (*.pem);;All (*)");
     if (!path.isEmpty()) {
         m_rsaPrivKey->setText(path);
         validatePrivKey();
@@ -250,13 +296,59 @@ void MainWindow::copyOutput() {
     QApplication::clipboard()->setText(m_outTextEdit->toPlainText());
 }
 
+void MainWindow::generateXorKey() {
+    try {
+        std::string key = ::generateXorKey(m_xorKeyLen->value());
+        m_xorKey->setText(QString::fromStdString(key));
+    } catch (const std::exception& ex) {
+        QMessageBox::critical(this, "Ошибка", QString::fromStdString(ex.what()));
+    }
+}
+
+void MainWindow::generateRsaKeys() {
+    QString dir = QFileDialog::getExistingDirectory(
+        this, "Выберите папку для сохранения ключей");
+    if (dir.isEmpty()) {
+        return;
+    }
+    try {
+        auto pair = generateRsaKeyPair(2048);
+
+        QString pubPath = dir + "/public.pem";
+        QString privPath = dir + "/private.pem";
+
+        QFile pubFile(pubPath);
+        if (!pubFile.open(QIODevice::WriteOnly)) {
+            throw std::runtime_error("Не удалось записать public.pem");
+        }
+        pubFile.write(pair.publicKey.data(), static_cast<qint64>(pair.publicKey.size()));
+
+        QFile privFile(privPath);
+        if (!privFile.open(QIODevice::WriteOnly)) {
+            throw std::runtime_error("Не удалось записать private.pem");
+        }
+        privFile.write(pair.privateKey.data(), static_cast<qint64>(pair.privateKey.size()));
+
+        m_rsaPubKey->setText(pubPath);
+        m_rsaPrivKey->setText(privPath);
+        validatePrivKey();
+
+        QMessageBox::information(this, "Готово",
+            "Ключи сгенерированы:\n" + pubPath + "\n" + privPath +
+            "\n\n⚠ Никогда не добавляйте private.pem в git!");
+    } catch (const std::exception& ex) {
+        QMessageBox::critical(this, "Ошибка генерации", QString::fromStdString(ex.what()));
+    }
+}
+
 void MainWindow::execute() {
     try {
         std::vector<uint8_t> inputData;
+
         if (m_srcText->isChecked()) {
             std::string text = m_srcTextEdit->toPlainText().toStdString();
             inputData.assign(text.begin(), text.end());
-        } else {
+        } else if (m_srcFile->isChecked()) {
             QString path = m_srcFilePath->text().trimmed();
             if (path.isEmpty()) {
                 QMessageBox::warning(this, "Ошибка", "Укажите путь к файлу источника.");
@@ -264,6 +356,13 @@ void MainWindow::execute() {
             }
             FileSource src(path.toStdString());
             inputData = src.readAll();
+        } else {
+            if (m_lastResult.empty()) {
+                QMessageBox::warning(this, "Ошибка",
+                    "Нет предыдущего результата. Сначала выполните шифрование.");
+                return;
+            }
+            inputData = m_lastResult;
         }
 
         std::vector<uint8_t> result;
@@ -297,16 +396,23 @@ void MainWindow::execute() {
             }
         }
 
+        m_lastResult = result;
+        updatePrevLabel();
+
         if (m_outGui->isChecked()) {
             m_outTextEdit->setPlainText(bytesToDisplay(result));
         } else {
-            QString path = QFileDialog::getSaveFileName(this, "Сохранить результат");
+            QString path = QFileDialog::getSaveFileName(
+                this, "Сохранить результат", "", "Binary (*.bin);;All (*)");
             if (path.isEmpty()) {
                 return;
             }
+            if (!path.endsWith(".bin", Qt::CaseInsensitive)) {
+                path += ".bin";
+            }
             FileSink sink(path.toStdString());
             sink.write(result);
-            QMessageBox::information(this, "Готово", "Файл сохранён: " + path);
+            QMessageBox::information(this, "Готово", "Файл сохранён:\n" + path);
         }
     } catch (const std::exception& ex) {
         QMessageBox::critical(this, "Ошибка", QString::fromStdString(ex.what()));

@@ -16,6 +16,7 @@ set(CRYPTO_SOURCES
     src/crypto/xor_cipher.cpp
     src/crypto/rsa_cipher.cpp
     src/crypto/key_validator.cpp
+    src/crypto/key_generator.cpp
 )
 
 set(IO_SOURCES

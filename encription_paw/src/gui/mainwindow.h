@@ -1,11 +1,15 @@
 #pragma once
 
+#include <cstdint>
+#include <vector>
+
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QSpinBox>
 #include <QStackedWidget>
 #include <QTabWidget>
 
@@ -23,20 +27,26 @@ private slots:
     void browsePrivKey();
     void validatePrivKey();
     void copyOutput();
+    void generateXorKey();
+    void generateRsaKeys();
 
 private:
     void setupUi();
     void connectSignals();
+    void updatePrevLabel();
 
     QRadioButton* m_srcText{};
     QRadioButton* m_srcFile{};
+    QRadioButton* m_srcPrev{};
     QStackedWidget* m_srcStack{};
     QPlainTextEdit* m_srcTextEdit{};
     QLineEdit* m_srcFilePath{};
+    QLabel* m_srcPrevLabel{};
 
     QTabWidget* m_algTabs{};
 
     QLineEdit* m_xorKey{};
+    QSpinBox* m_xorKeyLen{};
     QRadioButton* m_xorEncrypt{};
     QRadioButton* m_xorDecrypt{};
 
@@ -52,4 +62,6 @@ private:
     QPlainTextEdit* m_outTextEdit{};
 
     QPushButton* m_executeBtn{};
+
+    std::vector<uint8_t> m_lastResult;
 };
