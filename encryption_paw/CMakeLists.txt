@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(encription_paw VERSION 0.1 LANGUAGES CXX)
+project(encryption_paw VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -26,7 +26,7 @@ set(IO_SOURCES
     src/io/buffer_sink.cpp
 )
 
-qt_add_executable(encription_paw
+qt_add_executable(encryption_paw
     MANUAL_FINALIZATION
     ${CRYPTO_SOURCES}
     ${IO_SOURCES}
@@ -35,15 +35,15 @@ qt_add_executable(encription_paw
     src/gui/mainwindow.cpp
 )
 
-target_include_directories(encription_paw PRIVATE src)
+target_include_directories(encryption_paw PRIVATE src)
 
-target_link_libraries(encription_paw PRIVATE
+target_link_libraries(encryption_paw PRIVATE
     Qt6::Widgets
     OpenSSL::SSL
     OpenSSL::Crypto
 )
 
-set_target_properties(encription_paw PROPERTIES
+set_target_properties(encryption_paw PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
@@ -51,13 +51,13 @@ set_target_properties(encription_paw PROPERTIES
 )
 
 include(GNUInstallDirs)
-install(TARGETS encription_paw
+install(TARGETS encryption_paw
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-qt_finalize_executable(encription_paw)
+qt_finalize_executable(encryption_paw)
 
 add_executable(test_cli
     src/cli/test_cli.cpp
