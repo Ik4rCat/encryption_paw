@@ -75,3 +75,16 @@ target_link_libraries(test_cli PRIVATE
 target_compile_definitions(test_cli PRIVATE
     LEGACY_PAW_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../legacy_paw"
 )
+
+add_executable(demo_cli
+    src/cli/demo_cli.cpp
+    ${CRYPTO_SOURCES}
+    ${IO_SOURCES}
+)
+
+target_include_directories(demo_cli PRIVATE src)
+
+target_link_libraries(demo_cli PRIVATE
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
