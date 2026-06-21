@@ -33,3 +33,22 @@ KeyValidationResult validatePrivateKey(const std::string& privKeyPath) {
 
     return {true, "RSA-" + std::to_string(bits) + ", ключ корректен", bits};
 }
+
+KeyValidationResult validatePublicKey(const std::string& pubKeyPath) {
+    FILE* fp = fopen(pubKeyPath.c_str(), "r");
+    if (!fp) {
+        return {false, "Ошибка: не удалось открыть файл", 0};
+    }
+
+    EVP_PKEY* pkey = PEM_read_PUBKEY(fp, nullptr, nullptr, nullptr);
+    fclose(fp);
+
+    if (!pkey) {
+        return {false, "Ошибка: некорректный или повреждённый PEM файл", 0};
+    }
+
+    int bits = EVP_PKEY_get_bits(pkey);
+    EVP_PKEY_free(pkey);
+
+    return {true, "RSA-" + std::to_string(bits) + ", ключ корректен", bits};
+}

@@ -9,3 +9,4 @@ struct KeyValidationResult {
 };
 
 KeyValidationResult validatePrivateKey(const std::string& privKeyPath);
+KeyValidationResult validatePublicKey(const std::string& pubKeyPath);

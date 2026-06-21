@@ -87,9 +87,12 @@ void MainWindow::setupUi() {
         QWidget* prevPage = new QWidget(m_srcStack);
         QVBoxLayout* prevLayout = new QVBoxLayout(prevPage);
         prevLayout->setContentsMargins(0, 4, 0, 4);
-        m_srcPrevLabel = new QLabel("Нет предыдущего результата", prevPage);
-        m_srcPrevLabel->setStyleSheet("color: gray;");
-        prevLayout->addWidget(m_srcPrevLabel);
+        m_srcPrevText = new QPlainTextEdit(prevPage);
+        m_srcPrevText->setReadOnly(true);
+        m_srcPrevText->setFixedHeight(72);
+        m_srcPrevText->setPlaceholderText("Нет предыдущего результата");
+        m_srcPrevText->setStyleSheet("color: gray;");
+        prevLayout->addWidget(m_srcPrevText);
         m_srcStack->addWidget(prevPage);
 
         gl->addWidget(m_srcStack);
@@ -151,6 +154,10 @@ void MainWindow::setupUi() {
         pubRow->addWidget(pubBrowse);
         rsaLayout->addLayout(pubRow);
         connect(pubBrowse, &QPushButton::clicked, this, &MainWindow::browsePubKey);
+
+        m_rsaPubKeyStatus = new QLabel("● Не проверен", rsaTab);
+        m_rsaPubKeyStatus->setStyleSheet("color: gray;");
+        rsaLayout->addWidget(m_rsaPubKeyStatus);
 
         QHBoxLayout* privRow = new QHBoxLayout();
         privRow->addWidget(new QLabel("Приватный ключ:"));
@@ -234,35 +241,19 @@ void MainWindow::connectSignals() {
     connect(m_outGui, &QRadioButton::toggled, this, [this](bool checked) {
         m_outStack->setCurrentIndex(checked ? 0 : 1);
     });
+    connect(m_rsaPubKey, &QLineEdit::editingFinished, this, &MainWindow::validatePubKey);
     connect(m_rsaPrivKey, &QLineEdit::editingFinished, this, &MainWindow::validatePrivKey);
     connect(m_executeBtn, &QPushButton::clicked, this, &MainWindow::execute);
-    connect(m_xorEncrypt, &QRadioButton::toggled, this, [this](bool) { updatePrevLabel(); });
-    connect(m_xorDecrypt, &QRadioButton::toggled, this, [this](bool) { updatePrevLabel(); });
-    connect(m_rsaEncrypt, &QRadioButton::toggled, this, [this](bool) { updatePrevLabel(); });
-    connect(m_rsaDecrypt, &QRadioButton::toggled, this, [this](bool) { updatePrevLabel(); });
-    connect(m_algTabs, &QTabWidget::currentChanged, this, [this](int) { updatePrevLabel(); });
 }
 
 void MainWindow::updatePrevLabel() {
     if (m_lastResult.empty()) {
-        m_srcPrevLabel->setText("Нет предыдущего результата");
-        m_srcPrevLabel->setStyleSheet("color: gray;");
-        return;
+        m_srcPrevText->clear();
+        m_srcPrevText->setStyleSheet("color: gray;");
+    } else {
+        m_srcPrevText->setPlainText(bytesToDisplay(m_lastResult));
+        m_srcPrevText->setStyleSheet("");
     }
-    bool isDecrypt = false;
-    QString algo = "XOR";
-    if (m_algTabs && m_xorDecrypt && m_rsaDecrypt) {
-        if (m_algTabs->currentIndex() == 0) {
-            isDecrypt = m_xorDecrypt->isChecked();
-        } else {
-            isDecrypt = m_rsaDecrypt->isChecked();
-            algo = "RSA";
-        }
-    }
-    QString op = isDecrypt ? "Расшифровывает" : "Шифрует";
-    m_srcPrevLabel->setText(
-        QString("%1 [%2]: %3 байт").arg(op, algo).arg(m_lastResult.size()));
-    m_srcPrevLabel->setStyleSheet(isDecrypt ? "color: #0055cc;" : "color: green;");
 }
 
 void MainWindow::browseInputFile() {
@@ -277,6 +268,7 @@ void MainWindow::browsePubKey() {
         this, "Публичный ключ (PEM)", "", "PEM (*.pem);;All (*)");
     if (!path.isEmpty()) {
         m_rsaPubKey->setText(path);
+        validatePubKey();
     }
 }
 
@@ -286,6 +278,23 @@ void MainWindow::browsePrivKey() {
     if (!path.isEmpty()) {
         m_rsaPrivKey->setText(path);
         validatePrivKey();
+    }
+}
+
+void MainWindow::validatePubKey() {
+    QString path = m_rsaPubKey->text().trimmed();
+    if (path.isEmpty()) {
+        m_rsaPubKeyStatus->setText("● Не проверен");
+        m_rsaPubKeyStatus->setStyleSheet("color: gray;");
+        return;
+    }
+    auto res = validatePublicKey(path.toStdString());
+    if (res.valid) {
+        m_rsaPubKeyStatus->setText("✓ " + QString::fromStdString(res.message));
+        m_rsaPubKeyStatus->setStyleSheet("color: green;");
+    } else {
+        m_rsaPubKeyStatus->setText("✗ Ключ не прошёл проверку");
+        m_rsaPubKeyStatus->setStyleSheet("color: red;");
     }
 }
 
@@ -345,6 +354,7 @@ void MainWindow::generateRsaKeys() {
 
         m_rsaPubKey->setText(pubPath);
         m_rsaPrivKey->setText(privPath);
+        validatePubKey();
         validatePrivKey();
 
         QMessageBox::information(this, "Готово",

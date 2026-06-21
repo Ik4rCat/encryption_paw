@@ -26,6 +26,7 @@ private slots:
     void browseInputFile();
     void browsePubKey();
     void browsePrivKey();
+    void validatePubKey();
     void validatePrivKey();
     void copyOutput();
     void generateXorKey();
@@ -43,7 +44,7 @@ private:
     QPlainTextEdit* m_srcTextEdit{};
     QCheckBox* m_srcBase64{};
     QLineEdit* m_srcFilePath{};
-    QLabel* m_srcPrevLabel{};
+    QPlainTextEdit* m_srcPrevText{};
 
     QTabWidget* m_algTabs{};
 
@@ -55,6 +56,7 @@ private:
     QRadioButton* m_rsaEncrypt{};
     QRadioButton* m_rsaDecrypt{};
     QLineEdit* m_rsaPubKey{};
+    QLabel* m_rsaPubKeyStatus{};
     QLineEdit* m_rsaPrivKey{};
     QLabel* m_rsaKeyStatus{};
 
