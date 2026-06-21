@@ -420,19 +420,23 @@ void MainWindow::execute() {
                 result = xorDecrypt(inputData, key.toStdString());
             }
         } else {
+            QString pub = m_rsaPubKey->text().trimmed();
+            QString priv = m_rsaPrivKey->text().trimmed();
+
+            auto pubRes = validatePublicKey(pub.toStdString());
+            auto privRes = validatePrivateKey(priv.toStdString());
+
+            if (!pubRes.valid || !privRes.valid) {
+                QString msg = "Шифрование невозможно: ключи RSA не прошли проверку.\n\n";
+                msg += "Публичный ключ: " + (pub.isEmpty() ? "не указан" : (pubRes.valid ? "✓ корректен" : "✗ " + QString::fromStdString(pubRes.message))) + "\n";
+                msg += "Приватный ключ: " + (priv.isEmpty() ? "не указан" : (privRes.valid ? "✓ корректен" : "✗ " + QString::fromStdString(privRes.message)));
+                QMessageBox::warning(this, "Ошибка", msg);
+                return;
+            }
+
             if (m_rsaEncrypt->isChecked()) {
-                QString pub = m_rsaPubKey->text().trimmed();
-                if (pub.isEmpty()) {
-                    QMessageBox::warning(this, "Ошибка", "Укажите путь к публичному ключу.");
-                    return;
-                }
                 result = rsaEncrypt(inputData, pub.toStdString());
             } else {
-                QString priv = m_rsaPrivKey->text().trimmed();
-                if (priv.isEmpty()) {
-                    QMessageBox::warning(this, "Ошибка", "Укажите путь к приватному ключу.");
-                    return;
-                }
                 result = rsaDecrypt(inputData, priv.toStdString());
             }
         }
