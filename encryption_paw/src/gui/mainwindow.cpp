@@ -107,11 +107,11 @@ void MainWindow::setupUi() {
         QHBoxLayout* keyRow = new QHBoxLayout();
         keyRow->addWidget(new QLabel("Ключ:"));
         m_xorKey = new QLineEdit(xorTab);
-        m_xorKey->setPlaceholderText("Введите ключ XOR...");
+        m_xorKey->setPlaceholderText("Введите ключ XOR (8–64 символа)...");
         keyRow->addWidget(m_xorKey);
         keyRow->addWidget(new QLabel("Длина:"));
         m_xorKeyLen = new QSpinBox(xorTab);
-        m_xorKeyLen->setRange(1, 256);
+        m_xorKeyLen->setRange(8, 64);
         m_xorKeyLen->setValue(32);
         m_xorKeyLen->setFixedWidth(60);
         keyRow->addWidget(m_xorKeyLen);
@@ -236,17 +236,33 @@ void MainWindow::connectSignals() {
     });
     connect(m_rsaPrivKey, &QLineEdit::editingFinished, this, &MainWindow::validatePrivKey);
     connect(m_executeBtn, &QPushButton::clicked, this, &MainWindow::execute);
+    connect(m_xorEncrypt, &QRadioButton::toggled, this, [this](bool) { updatePrevLabel(); });
+    connect(m_xorDecrypt, &QRadioButton::toggled, this, [this](bool) { updatePrevLabel(); });
+    connect(m_rsaEncrypt, &QRadioButton::toggled, this, [this](bool) { updatePrevLabel(); });
+    connect(m_rsaDecrypt, &QRadioButton::toggled, this, [this](bool) { updatePrevLabel(); });
+    connect(m_algTabs, &QTabWidget::currentChanged, this, [this](int) { updatePrevLabel(); });
 }
 
 void MainWindow::updatePrevLabel() {
     if (m_lastResult.empty()) {
         m_srcPrevLabel->setText("Нет предыдущего результата");
         m_srcPrevLabel->setStyleSheet("color: gray;");
-    } else {
-        m_srcPrevLabel->setText(
-            QString("Предыдущий результат: %1 байт").arg(m_lastResult.size()));
-        m_srcPrevLabel->setStyleSheet("color: green;");
+        return;
     }
+    bool isDecrypt = false;
+    QString algo = "XOR";
+    if (m_algTabs && m_xorDecrypt && m_rsaDecrypt) {
+        if (m_algTabs->currentIndex() == 0) {
+            isDecrypt = m_xorDecrypt->isChecked();
+        } else {
+            isDecrypt = m_rsaDecrypt->isChecked();
+            algo = "RSA";
+        }
+    }
+    QString op = isDecrypt ? "Расшифровывает" : "Шифрует";
+    m_srcPrevLabel->setText(
+        QString("%1 [%2]: %3 байт").arg(op, algo).arg(m_lastResult.size()));
+    m_srcPrevLabel->setStyleSheet(isDecrypt ? "color: #0055cc;" : "color: green;");
 }
 
 void MainWindow::browseInputFile() {
@@ -381,6 +397,11 @@ void MainWindow::execute() {
             QString key = m_xorKey->text();
             if (key.isEmpty()) {
                 QMessageBox::warning(this, "Ошибка", "Введите ключ XOR.");
+                return;
+            }
+            if (key.length() < 8 || key.length() > 64) {
+                QMessageBox::warning(this, "Ошибка",
+                    QString("Ключ XOR должен содержать от 8 до 64 символов (сейчас: %1).").arg(key.length()));
                 return;
             }
             if (m_xorEncrypt->isChecked()) {

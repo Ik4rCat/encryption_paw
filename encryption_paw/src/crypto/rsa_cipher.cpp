@@ -148,14 +148,14 @@ std::vector<uint8_t> rsaDecrypt(const std::vector<uint8_t>& data, const std::str
         if (EVP_PKEY_decrypt(ctx, nullptr, &pt_len, block, static_cast<size_t>(rsa_size)) <= 0) {
             EVP_PKEY_CTX_free(ctx);
             EVP_PKEY_free(pkey);
-            throw std::runtime_error("RSA decrypt size query failed");
+            throw std::runtime_error("Расшифровка RSA не удалась: приватный ключ не соответствует зашифрованным данным");
         }
 
         std::vector<uint8_t> pt(pt_len);
         if (EVP_PKEY_decrypt(ctx, pt.data(), &pt_len, block, static_cast<size_t>(rsa_size)) <= 0) {
             EVP_PKEY_CTX_free(ctx);
             EVP_PKEY_free(pkey);
-            throw std::runtime_error("RSA decrypt failed");
+            throw std::runtime_error("Расшифровка RSA не удалась: приватный ключ не соответствует зашифрованным данным");
         }
         EVP_PKEY_CTX_free(ctx);
 
