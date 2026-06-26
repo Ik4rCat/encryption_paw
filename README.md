@@ -29,11 +29,11 @@ RSA doesn't encrypt a long file in one piece (there's a limit on the size of a s
 
 ## Authors
 
-| Project performance assessment | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ |
+| Project performance assessment | ★★★☆☆ | ★★★★★ | ☆☆☆☆☆ |
 |---|---|---|---|
 | **Digital face** | <img src="https://avatars.githubusercontent.com/Ik4rCat" width="100" height="100" style="border-radius: 100%"> | <img src="https://avatars.githubusercontent.com/gkfosl" width="100" height="100" style="border-radius: 100%">  | <img src="https://avatars.githubusercontent.com/artitiam" width="100" height="100" style="border-radius: 100%"> |
 | **Names** | [@æwk](https://github.com/Ik4rCat) | [@gkfosl](https://github.com/gkfosl) | [@artitiam](https://github.com/artitiam) |
-| **Work on the project** | `main program` | `presentation` & <br> `documentation` | `main program` |
+| **Work on the project** | `frontend` | `presentation` & <br> `documentation` | `backend` |
 
 
 from B.D.S.M. with <3
